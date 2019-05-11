@@ -14,7 +14,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="Program.fs" />
     <Content Include="Tools/Paket/paket.bootstrapper.exe">

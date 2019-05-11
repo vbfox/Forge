@@ -8,6 +8,7 @@
   #r "Facades/netstandard.dll"
 #endif
 
+open System.Xml.Linq
 open Fake.Core
 open Fake.DotNet
 open Fake.Tools
@@ -21,13 +22,9 @@ open Fake.Api
 // Information about the project to be used at NuGet and in AssemblyInfo files
 // --------------------------------------------------------------------------------------
 
-let project = "Forge"
-let summary = "Forge is a build tool that provides tasks for creating, compiling, and testing F# projects"
-
 let gitOwner = "ionide"
 let gitHome = "https://github.com/" + gitOwner
 let gitName = "Forge"
-let gitRaw = Environment.environVarOrDefault "gitRaw" ("https://raw.github.com/" + gitOwner)
 
 // --------------------------------------------------------------------------------------
 // Build variables
@@ -48,7 +45,6 @@ let forgeSh = "./forge.sh"
 let isNullOrWhiteSpace = System.String.IsNullOrWhiteSpace
 let exec cmd args dir =
     if Process.execSimple( fun info ->
-
         { info with
             FileName = cmd
             WorkingDirectory =
@@ -70,30 +66,14 @@ Target.create "Clean" (fun _ ->
 )
 
 Target.create "AssemblyInfo" (fun _ ->
-    let getAssemblyInfoAttributes projectName =
-        [ AssemblyInfo.Title projectName
-          AssemblyInfo.Product project
-          AssemblyInfo.Description summary
-          AssemblyInfo.Version release.AssemblyVersion
-          AssemblyInfo.FileVersion release.AssemblyVersion ]
-
-    let getProjectDetails projectPath =
-        let projectName = System.IO.Path.GetFileNameWithoutExtension(projectPath)
-        ( projectPath,
-          projectName,
-          System.IO.Path.GetDirectoryName(projectPath),
-          (getAssemblyInfoAttributes projectName)
-        )
-
-    !! "src/**/*.??proj"
-    |> Seq.map getProjectDetails
-    |> Seq.iter (fun (projFileName, _, folderName, attributes) ->
-        match projFileName with
-        | proj when proj.EndsWith("fsproj") -> AssemblyInfoFile.createFSharp (folderName </> "AssemblyInfo.fs") attributes
-        | proj when proj.EndsWith("csproj") -> AssemblyInfoFile.createCSharp ((folderName </> "Properties") </> "AssemblyInfo.cs") attributes
-        | proj when proj.EndsWith("vbproj") -> AssemblyInfoFile.createVisualBasic ((folderName </> "My Project") </> "AssemblyInfo.vb") attributes
-        | _ -> ()
-        )
+    let doc =
+        XDocument(
+            XElement(XName.Get("Project"),
+                XElement(XName.Get("PropertyGroup"),
+                    XElement(XName.Get "Version", release.NugetVersion),
+                    XElement(XName.Get "PackageVersion", release.NugetVersion),
+                    XElement(XName.Get "PackageReleaseNotes", String.toLines release.Notes))))
+    System.IO.File.WriteAllText("src" </> "Version.props", doc.ToString())
 )
 
 Target.create "InstallDotNetCLI" (fun _ ->
@@ -137,16 +117,6 @@ Target.create "Pack" (fun _ ->
             ToolPath = ".paket/paket.exe"
         }
     )
-
-    //Pack Forge global tool
-    Environment.setEnvironVar "PackageVersion" release.NugetVersion
-    Environment.setEnvironVar "Version" release.NugetVersion
-    Environment.setEnvironVar "Authors" "Krzysztof Cieslak"
-    Environment.setEnvironVar "Description" summary
-    Environment.setEnvironVar "PackageReleaseNotes" (release.Notes |> String.toLines)
-    Environment.setEnvironVar "PackageTags" "build;fake;f#"
-    Environment.setEnvironVar "PackageProjectUrl" "https://github.com/ionide/Forge"
-    Environment.setEnvironVar "PackageLicenseUrl" "https://raw.githubusercontent.com/ionide/Forge/master/LICENSE.txt"
 
     DotNet.pack (fun p ->
         { p with

@@ -1,0 +1,13 @@
+<Project>
+    <PropertyGroup>
+        <PackageTags>build;fake;f#</PackageTags>
+        <Authors>Krzysztof Cieslak</Authors>
+        <Description>Forge is a build tool that provides tasks for creating, compiling, and testing F# projects</Description>
+        <PackageProjectUrl>https://github.com/ionide/Forge</PackageProjectUrl>
+        <PackageLicenseUrl>https://raw.githubusercontent.com/ionide/Forge/master/LICENSE.txt</PackageLicenseUrl>
+    </PropertyGroup>
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);FS2003</NoWarn>
+  </PropertyGroup>
+    <Import Project="$(MSBuildThisFileDirectory)/Version.props" Condition="exists('$(MSBuildThisFileDirectory)/Version.props')" />
+</Project>
